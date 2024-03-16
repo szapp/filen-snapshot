@@ -50,6 +50,16 @@ A more secure alternative is to store the arguments safely to disk and provide a
 await createSnapshot('path/to/config.json')
 ```
 
+The code above creates the following output:
+
+```
+L Important ████████████████████████████████████████ 100%  32s
+C Work      ███████████████████████░░░░░░░░░░░░░░░░░  68%  5s
+L Photos    ████████████████████████████████████████ 100%  50s
+```
+
+_The prefix (`L` or `C`) indicates if copied from local or cloud, respectively._
+
 The code above will result in the following directory backup:
 
 ```
