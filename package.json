@@ -1,6 +1,6 @@
 {
   "name": "filen-snapshot",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Create simple snapshots to back up your files and directories in your Filen.io drive",
   "main": "dist/index.js",
   "scripts": {
