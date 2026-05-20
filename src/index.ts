@@ -1,9 +1,9 @@
+import fs from 'node:fs'
+import { sep as pathSep, posix } from 'node:path'
+import FilenSDK, { type CloudItem } from '@filen/sdk'
 import cliProgress from 'cli-progress'
-import FilenSDK, { CloudItem } from '@filen/sdk'
-import fs from 'fs'
 import { DateTime } from 'luxon'
 import * as OTPAuth from 'otpauth'
-import { posix, sep as pathSep } from 'path'
 
 function formatPath(path: string): string {
   return posix.normalize(path.split(pathSep).join(posix.sep))
@@ -60,7 +60,7 @@ export default async function createSnapshot(params: FilenSnapshotParams | strin
       autopadding: true,
       format: '{source} {bar} {percentage}% {eta_formatted}',
     },
-    cliProgress.Presets.shades_classic
+    cliProgress.Presets.shades_classic,
   )
 
   // Login and copy files
@@ -92,9 +92,10 @@ export default async function createSnapshot(params: FilenSnapshotParams | strin
       // Create progress bar (indicate with L or C if local or cloud, respectively)
       const progressName: string = ((isLocal ? 'L ' : 'C ') + posix.basename(path)).padEnd(maxLength, ' ')
       const progressBar: cliProgress.SingleBar = multibar.create(size, 0, { source: progressName })
-      const progressFunc = (transfered: number): void => progressBar.increment(transfered)
+      const progressFunc = (transferred: number): void => progressBar.increment(transferred)
 
       // If the source is local, upload the directory (faster), otherwise copy it (slower, because if first downloads and then uploads)
+      // biome-ignore lint/suspicious/noConfusingVoidType: Return type of filen-sdk
       let job: Promise<void | CloudItem>
       if (isLocal) {
         const totalPath: string = posix.join(localPath, path)

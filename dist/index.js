@@ -37,24 +37,24 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = createSnapshot;
-const cli_progress_1 = __importDefault(require("cli-progress"));
+const node_fs_1 = __importDefault(require("node:fs"));
+const node_path_1 = require("node:path");
 const sdk_1 = __importDefault(require("@filen/sdk"));
-const fs_1 = __importDefault(require("fs"));
+const cli_progress_1 = __importDefault(require("cli-progress"));
 const luxon_1 = require("luxon");
 const OTPAuth = __importStar(require("otpauth"));
-const path_1 = require("path");
 function formatPath(path) {
-    return path_1.posix.normalize(path.split(path_1.sep).join(path_1.posix.sep));
+    return node_path_1.posix.normalize(path.split(node_path_1.sep).join(node_path_1.posix.sep));
 }
 async function createSnapshot(params) {
     // Load parameters from JSON file
     if (typeof params === 'string')
-        params = JSON.parse(fs_1.default.readFileSync(params, { encoding: 'utf-8' }));
+        params = JSON.parse(node_fs_1.default.readFileSync(params, { encoding: 'utf-8' }));
     // Format paths
     const source = params.source.map((path) => formatPath(path));
     const destDir = formatPath(params.destination);
     const snapshotName = formatPath(luxon_1.DateTime.now().toFormat(params.snapshotName || 'yyyy-MM-dd_HH-mm-ss'));
-    const destination = formatPath(path_1.posix.join(destDir, snapshotName));
+    const destination = formatPath(node_path_1.posix.join(destDir, snapshotName));
     const localPath = params.localPath ? formatPath(params.localPath) : undefined;
     // Verfiy source paths
     source.forEach((path) => {
@@ -64,7 +64,7 @@ async function createSnapshot(params) {
     let maxLength = 0;
     for (let idx = 0; idx < source.length; idx++) {
         const path = source[idx];
-        maxLength = Math.max(maxLength, path_1.posix.basename(path).length + 2);
+        maxLength = Math.max(maxLength, node_path_1.posix.basename(path).length + 2);
         for (let jdx = idx + 1; jdx < source.length; jdx++) {
             const other = source[jdx];
             if (path.startsWith(other) || other.startsWith(path))
@@ -104,18 +104,19 @@ async function createSnapshot(params) {
                 throw new Error(`Source path '${path}' is not a directory`); // Only support directories for deterministic progress
             const { size } = await filen.api(3).dir().size({ uuid });
             // Check if the source path is available locally (for faster uploads)
-            const isLocal = typeof localPath !== 'undefined' && fs_1.default.existsSync(path_1.posix.join(localPath, path));
+            const isLocal = typeof localPath !== 'undefined' && node_fs_1.default.existsSync(node_path_1.posix.join(localPath, path));
             // Create progress bar (indicate with L or C if local or cloud, respectively)
-            const progressName = ((isLocal ? 'L ' : 'C ') + path_1.posix.basename(path)).padEnd(maxLength, ' ');
+            const progressName = ((isLocal ? 'L ' : 'C ') + node_path_1.posix.basename(path)).padEnd(maxLength, ' ');
             const progressBar = multibar.create(size, 0, { source: progressName });
-            const progressFunc = (transfered) => progressBar.increment(transfered);
+            const progressFunc = (transferred) => progressBar.increment(transferred);
             // If the source is local, upload the directory (faster), otherwise copy it (slower, because if first downloads and then uploads)
+            // biome-ignore lint/suspicious/noConfusingVoidType: Return type of filen-sdk
             let job;
             if (isLocal) {
-                const totalPath = path_1.posix.join(localPath, path);
+                const totalPath = node_path_1.posix.join(localPath, path);
                 // Create parent directories to get UUID
-                const parents = path_1.posix.dirname(path);
-                const parentUUID = await filen.fs().mkdir({ path: path_1.posix.join(destination, parents) });
+                const parents = node_path_1.posix.dirname(path);
+                const parentUUID = await filen.fs().mkdir({ path: node_path_1.posix.join(destination, parents) });
                 // Upload local directory, nested into parent directories
                 job = filen.cloud().uploadLocalDirectory({
                     source: totalPath,
@@ -127,7 +128,7 @@ async function createSnapshot(params) {
             else {
                 job = filen.fs().copy({
                     from: path,
-                    to: path_1.posix.join(destination, path),
+                    to: node_path_1.posix.join(destination, path),
                     onProgress: progressFunc,
                     abortSignal: abortAll.signal,
                 });
